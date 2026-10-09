@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import '../../domain/entities/exercise.dart';
+import '../../domain/entities/profile.dart';
 import '../../domain/entities/routine.dart';
 import '../../domain/entities/session.dart';
 import '../../domain/repositories/exercise_repository.dart';
+import '../../domain/repositories/profile_repository.dart';
 import '../../domain/repositories/routine_repository.dart';
 import '../../domain/repositories/session_repository.dart';
 import 'database_service.dart';
@@ -17,10 +19,12 @@ class LocalDatabaseService implements DatabaseService {
         : _persist = persist,
           _exerciseData = [],
           _routineData = [],
-          _sessionData = [] {
+          _sessionData = [],
+          _profileData = [Profile.defaultProfile()] {
         _exerciseRepository = _LocalExerciseRepository(_exerciseData, _apply);
         _routineRepository = _LocalRoutineRepository(_routineData, _apply);
         _sessionRepository = _LocalSessionRepository(_sessionData, _apply);
+        _profileRepository = _LocalProfileRepository(_profileData, _apply);
     }
 
     /// Rebuilds the service from a previously persisted JSON snapshot.
@@ -43,10 +47,18 @@ class LocalDatabaseService implements DatabaseService {
               .map(
                   (s) => Session.fromJson(Map<String, dynamic>.from(s as Map)),
               )
-              .toList() {
+              .toList(),
+          _profileData = [
+            if (state['profile'] != null)
+              Profile.fromJson(
+                  Map<String, dynamic>.from(state['profile'] as Map))
+            else
+              Profile.defaultProfile(),
+          ] {
         _exerciseRepository = _LocalExerciseRepository(_exerciseData, _apply);
         _routineRepository = _LocalRoutineRepository(_routineData, _apply);
         _sessionRepository = _LocalSessionRepository(_sessionData, _apply);
+        _profileRepository = _LocalProfileRepository(_profileData, _apply);
         if (!_exerciseData.any((e) => !e.isCustom)) {
             _seedCatalog();
         }
@@ -57,10 +69,12 @@ class LocalDatabaseService implements DatabaseService {
     late final _LocalExerciseRepository _exerciseRepository;
     late final _LocalRoutineRepository _routineRepository;
     late final _LocalSessionRepository _sessionRepository;
+    late final _LocalProfileRepository _profileRepository;
 
     final List<Exercise> _exerciseData;
     final List<Routine> _routineData;
     final List<Session> _sessionData;
+    final List<Profile> _profileData;
 
     @override
     ExerciseRepository get exercises => _exerciseRepository;
@@ -70,6 +84,9 @@ class LocalDatabaseService implements DatabaseService {
 
     @override
     SessionRepository get sessions => _sessionRepository;
+
+    @override
+    ProfileRepository get profiles => _profileRepository;
 
     @override
     Future<void> init() async {
@@ -92,7 +109,14 @@ class LocalDatabaseService implements DatabaseService {
             'routines': _routineData.map((r) => r.toJson()).toList(),
             'exercises': _exerciseData.map((e) => e.toJson()).toList(),
             'sessions': _sessionData.map((s) => s.toJson()).toList(),
+            'profile': _defaultProfile().toJson(),
         };
+    }
+
+    Profile _defaultProfile() {
+        return _profileData.isEmpty
+            ? Profile.defaultProfile()
+            : _profileData.first;
     }
 
     /// Drops everything and re-seeds the predefined exercise catalog.
@@ -250,6 +274,41 @@ class _LocalSessionRepository implements SessionRepository {
     @override
     Future<void> delete(String id) async {
         _data.removeWhere((s) => s.id == id);
+        _apply();
+    }
+}
+
+class _LocalProfileRepository implements ProfileRepository {
+    _LocalProfileRepository(this._data, this._apply);
+
+    final List<Profile> _data;
+    final void Function() _apply;
+
+    @override
+    Future<Profile> get() async {
+        if (_data.isEmpty) {
+            final fresh = Profile.defaultProfile();
+            _data.add(fresh);
+            _apply();
+            return fresh;
+        }
+        return _data.first;
+    }
+
+    @override
+    Future<void> save(Profile profile) async {
+        final stored = Profile(
+            id: Profile.localId,
+            name: profile.name,
+            trainingDays: List<int>.from(profile.trainingDays),
+            themeModeIndex: profile.themeModeIndex,
+            amoled: profile.amoled,
+        );
+        if (_data.isEmpty) {
+            _data.add(stored);
+        } else {
+            _data[0] = stored;
+        }
         _apply();
     }
 }

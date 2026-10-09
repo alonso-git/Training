@@ -6,6 +6,7 @@ import '../../domain/entities/exercise_log.dart';
 import '../../domain/entities/routine.dart';
 import '../../domain/entities/session.dart';
 import '../../domain/repositories/exercise_repository.dart';
+import '../../domain/repositories/profile_repository.dart';
 import '../../domain/repositories/routine_repository.dart';
 import '../../domain/repositories/session_repository.dart';
 
@@ -20,6 +21,7 @@ class AppServices {
     late final ExerciseRepository exercises = database.exercises;
     late final RoutineRepository routines = database.routines;
     late final SessionRepository sessions = database.sessions;
+    late final ProfileRepository profiles = database.profiles;
 
     static AppServices get instance {
         final instance = _instance;

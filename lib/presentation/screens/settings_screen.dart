@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../../data/services/backup_service.dart';
 import '../../data/services/database_service.dart';
+import '../state/profile_state.dart';
 import '../view_models/settings_view_model.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,10 +18,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-    late final SettingsViewModel _vm = SettingsViewModel(
-        widget.backup,
-        widget.database,
-    );
+    late final SettingsViewModel _vm;
+
+    @override
+    void initState() {
+        super.initState();
+        _vm = SettingsViewModel(widget.backup, widget.database);
+        ProfileState.load();
+    }
 
     @override
     Widget build(BuildContext context) {
@@ -28,6 +34,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
             body: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                    Text('Profile', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    SignalBuilder(builder: (context) {
+                        final profile = ProfileState.profile.value;
+                        return Card(
+                            child: ListTile(
+                                leading: const Icon(Icons.person),
+                                title: Text(
+                                    '${profile.displayName}'
+                                    ' · '
+                                    '${profile.trainingDays.length} training'
+                                    ' days',
+                                ),
+                                subtitle: Text(
+                                    '${profile.themeMode.name} theme'
+                                    '${profile.amoled ? ' · AMOLED' : ''}',
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => context.push('/profile'),
+                            ),
+                        );
+                    }),
+                    const SizedBox(height: 16),
                     Text('Data', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Card(

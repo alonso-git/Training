@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:signals/signals_flutter.dart';
 import 'dart:io' show exit;
 
 import 'core/theme/app_theme.dart';
@@ -21,6 +22,9 @@ import 'presentation/screens/session_screen.dart';
 import 'presentation/screens/session_summary_screen.dart';
 import 'presentation/view_models/session_view_model.dart';
 import 'presentation/screens/settings_screen.dart';
+import 'presentation/screens/profile_screen.dart';
+
+import 'presentation/state/profile_state.dart';
 
 void main() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +34,7 @@ void main() async {
         await seedTrainingSplit(database);
         exit(0);
     }
+    await ProfileState.load();
     runApp(WorkoutApp(database: database));
 }
 
@@ -54,9 +59,7 @@ Future<void> bootstrapServices(DatabaseService database) async {
 class WorkoutApp extends StatelessWidget {
     WorkoutApp({required this.database, super.key});
 
-    final DatabaseService database;
-
-    late final GoRouter _router = GoRouter(
+    final DatabaseService database;    late final GoRouter _router = GoRouter(
         routes: [
             GoRoute(
                 path: '/',
@@ -126,17 +129,26 @@ class WorkoutApp extends StatelessWidget {
                     database: database,
                 ),
             ),
+            GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+            ),
         ],
     );
 
     @override
     Widget build(BuildContext context) {
-        return MaterialApp.router(
-            title: 'Workout Tracker',
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: ThemeMode.system,
-            routerConfig: _router,
+        return SignalBuilder(
+            builder: (context) {
+                final profile = ProfileState.profile.value;
+                return MaterialApp.router(
+                    title: 'Workout Tracker',
+                    theme: AppTheme.light(),
+                    darkTheme: AppTheme.dark(amoled: profile.amoled),
+                    themeMode: profile.themeMode,
+                    routerConfig: _router,
+                );
+            },
         );
     }
 }

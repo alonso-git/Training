@@ -176,8 +176,14 @@ Future<Exercise?> showExerciseConfigDialog(
                         ? 'Custom exercise'
                         : 'Edit exercise',
                 ),
+                titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 48,
+                ),
                 content: SizedBox(
-                    width: 420,
+                    width: 440,
                     child: SingleChildScrollView(
                         child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -192,7 +198,7 @@ Future<Exercise?> showExerciseConfigDialog(
                                     ),
                                     onChanged: vm.name.set,
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 20),
                                 DropdownButtonFormField<String>(
                                     initialValue: vm.muscleGroup.value,
                                     decoration: const InputDecoration(
@@ -221,6 +227,7 @@ Future<Exercise?> showExerciseConfigDialog(
                                         });
                                     },
                                 ),
+                                const SizedBox(height: 20),
                                 Row(
                                     children: [
                                         Expanded(
@@ -234,9 +241,10 @@ Future<Exercise?> showExerciseConfigDialog(
                                                 ),
                                             ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 16),
                                     ],
                                 ),
+                                const SizedBox(height: 20),
                                 Row(
                                     children: [
                                         Expanded(
@@ -255,7 +263,7 @@ Future<Exercise?> showExerciseConfigDialog(
                                                 }),
                                             ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 16),
                                         Expanded(
                                             child: _numberField(
                                                 'Max reps',
@@ -270,6 +278,7 @@ Future<Exercise?> showExerciseConfigDialog(
                                         ),
                                     ],
                                 ),
+                                const SizedBox(height: 20),
                                 _numberField(
                                     'Weight increment (kg)',
                                     vm.weightIncrement.value,
@@ -281,11 +290,14 @@ Future<Exercise?> showExerciseConfigDialog(
                                     ),
                                     step: 0.25,
                                 ),
+                                const SizedBox(height: 4),
                                 buildErrorRow(),
                             ],
                         ),
                     ),
                 ),
+                actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                actionsOverflowButtonSpacing: 8,
                 actions: [
                     TextButton(
                         onPressed: () => Navigator.of(context).pop(),
