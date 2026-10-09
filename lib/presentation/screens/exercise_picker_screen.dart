@@ -7,6 +7,7 @@ import '../../data/services/workout_service.dart';
 import '../../domain/entities/exercise.dart';
 import '../view_models/exercise_config_view_model.dart';
 import '../view_models/exercise_picker_view_model.dart';
+import '../widgets/number_field.dart';
 
 /// Choose exercises from the catalog (or create custom ones) and return the
 /// selected ids to the caller.
@@ -164,165 +165,182 @@ Future<Exercise?> showExerciseConfigDialog(
     if (existing != null) {
         vm.loadFrom(existing);
     }
-    final body = StatefulBuilder(
-        builder: (context, setState) {
-            Widget buildErrorRow() {
-                return const SizedBox.shrink();
-            }
-
-            return AlertDialog(
-                title: Text(
-                    existing == null
-                        ? 'Custom exercise'
-                        : 'Edit exercise',
-                ),
-                titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                insetPadding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 48,
-                ),
-                content: SizedBox(
-                    width: 440,
-                    child: SingleChildScrollView(
-                        child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                                TextField(
-                                    controller: TextEditingController(
-                                        text: vm.name.value,
-                                    ),
-                                    maxLength: 100,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Name',
-                                    ),
-                                    onChanged: vm.name.set,
-                                ),
-                                const SizedBox(height: 20),
-                                DropdownButtonFormField<String>(
-                                    initialValue: vm.muscleGroup.value,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Muscle group',
-                                    ),
-                                    items: [
-                                        for (final m in MuscleGroups.all)
-                                            DropdownMenuItem(
-                                                value: m,
-                                                child: Text(
-                                                    MuscleGroups.labelOf(m),
-                                                ),
-                                            ),
-                                    ],
-                                    onChanged: (value) {
-                                        setState(() {
-                                            vm.muscleGroup.value =
-                                                value ?? 'chest';
-                                            if (existing == null) {
-                                                vm.weightIncrement.value =
-                                                    MuscleGroups
-                                                        .incrementFor(
-                                                            value!,
-                                                        );
-                                            }
-                                        });
-                                    },
-                                ),
-                                const SizedBox(height: 20),
-                                Row(
-                                    children: [
-                                        Expanded(
-                                            child: _numberField(
-                                                'Sets',
-                                                vm.sets.value,
-                                                1,
-                                                20,
-                                                (v) => setState(
-                                                    () => vm.sets.value = v.toInt(),
-                                                ),
-                                            ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                    ],
-                                ),
-                                const SizedBox(height: 20),
-                                Row(
-                                    children: [
-                                        Expanded(
-                                            child: _numberField(
-                                                'Min reps',
-                                                vm.minReps.value,
-                                                1,
-                                                50,
-                                                (v) => setState(() {
-                                                    vm.minReps.value = v.toInt();
-                                                    if (v > vm.maxReps
-                                                        .value) {
-                                                        vm.maxReps.value =
-                                                            v.toInt();
-                                                    }
-                                                }),
-                                            ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                            child: _numberField(
-                                                'Max reps',
-                                                vm.maxReps.value,
-                                                1,
-                                                100,
-                                                (v) => setState(
-                                                    () =>
-                                                        vm.maxReps.value = v.toInt(),
-                                                ),
-                                            ),
-                                        ),
-                                    ],
-                                ),
-                                const SizedBox(height: 20),
-                                _numberField(
-                                    'Weight increment (kg)',
-                                    vm.weightIncrement.value,
-                                    0.25,
-                                    50,
-                                    (v) => setState(
-                                        () =>
-                                            vm.weightIncrement.value = v,
-                                    ),
-                                    step: 0.25,
-                                ),
-                                const SizedBox(height: 4),
-                                buildErrorRow(),
-                            ],
-                        ),
-                    ),
-                ),
-                actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                actionsOverflowButtonSpacing: 8,
-                actions: [
-                    TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                        onPressed: () {
-                            final error = vm.validate();
-                            if (error != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(error)),
-                                );
-                                return;
-                            }
-                            Navigator.of(context).pop(
-                                vm.build(WorkoutService()),
-                            );
-                        },
-                        child: const Text('Save'),
-                    ),
-                ],
-            );
-        },
-    );
+    final body = _ExerciseConfigDialog(vm: vm, existing: existing);
     return showDialog<Exercise>(context: context, builder: (_) => body);
+}
+
+class _ExerciseConfigDialog extends StatefulWidget {
+    const _ExerciseConfigDialog({required this.vm, this.existing});
+
+    final ExerciseConfigViewModel vm;
+    final Exercise? existing;
+
+    @override
+    State<_ExerciseConfigDialog> createState() =>
+        _ExerciseConfigDialogState();
+}
+
+class _ExerciseConfigDialogState extends State<_ExerciseConfigDialog> {
+    late final TextEditingController _name =
+        TextEditingController(text: widget.vm.name.value);
+
+    @override
+    void dispose() {
+        _name.dispose();
+        super.dispose();
+    }
+
+    void _setMuscleGroup(String? value) {
+        setState(() {
+            widget.vm.muscleGroup.value = value ?? 'chest';
+            if (widget.existing == null) {
+                widget.vm.weightIncrement.value =
+                    MuscleGroups.incrementFor(value!);
+            }
+        });
+    }
+
+    void _setMinReps(double value) {
+        setState(() {
+            widget.vm.minReps.value = value.toInt();
+            if (value > widget.vm.maxReps.value) {
+                widget.vm.maxReps.value = value.toInt();
+            }
+        });
+    }
+
+    @override
+    Widget build(BuildContext context) {
+        final vm = widget.vm;
+        return AlertDialog(
+            title: Text(
+                widget.existing == null
+                    ? 'Custom exercise'
+                    : 'Edit exercise',
+            ),
+            titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+            contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+            insetPadding: const EdgeInsets.symmetric(
+                horizontal: 40,
+                vertical: 48,
+            ),
+            content: SizedBox(
+                width: 440,
+                child: SingleChildScrollView(
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                            TextField(
+                                controller: _name,
+                                maxLength: 100,
+                                decoration: const InputDecoration(
+                                    labelText: 'Name',
+                                ),
+                                onChanged: vm.name.set,
+                            ),
+                            const SizedBox(height: 20),
+                            DropdownButtonFormField<String>(
+                                initialValue: vm.muscleGroup.value,
+                                decoration: const InputDecoration(
+                                    labelText: 'Muscle group',
+                                ),
+                                items: [
+                                    for (final m in MuscleGroups.all)
+                                        DropdownMenuItem(
+                                            value: m,
+                                            child: Text(
+                                                MuscleGroups.labelOf(m),
+                                            ),
+                                        ),
+                                ],
+                                onChanged: _setMuscleGroup,
+                            ),
+                            const SizedBox(height: 20),
+                            _numberField(
+                                'Sets',
+                                vm.sets.value,
+                                1,
+                                20,
+                                (v) => setState(
+                                    () => vm.sets.value = v.toInt(),
+                                ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                                children: [
+                                    Expanded(
+                                        child: _numberField(
+                                            'Min reps',
+                                            vm.minReps.value,
+                                            1,
+                                            50,
+                                            _setMinReps,
+                                        ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                        child: _numberField(
+                                            'Max reps',
+                                            vm.maxReps.value,
+                                            1,
+                                            100,
+                                            (v) => setState(
+                                                () => vm.maxReps.value =
+                                                    v.toInt(),
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            const SizedBox(height: 20),
+                            _numberField(
+                                'Weight increment (kg)',
+                                vm.weightIncrement.value,
+                                0.25,
+                                50,
+                                (v) => setState(
+                                    () => vm.weightIncrement.value = v,
+                                ),
+                            ),
+                            const SizedBox(height: 20),
+                            _numberField(
+                                'Rest between sets (s)',
+                                vm.restSeconds.value,
+                                minRestSeconds,
+                                maxRestSeconds,
+                                (v) => setState(
+                                    () => vm.restSeconds.value = v.toInt(),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+            actionsOverflowButtonSpacing: 8,
+            actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                ),
+                FilledButton(
+                    onPressed: () {
+                        final error = vm.validate();
+                        if (error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(error)),
+                            );
+                            return;
+                        }
+                        Navigator.of(context).pop(
+                            vm.build(WorkoutService()),
+                        );
+                    },
+                    child: const Text('Save'),
+                ),
+            ],
+        );
+    }
 }
 
 Widget _numberField(
@@ -330,21 +348,16 @@ Widget _numberField(
     num value,
     num min,
     num max,
-    ValueChanged<double> onChanged, {
-    double step = 1,
-}) {
-    return TextField(
-        controller: TextEditingController(text: value.toString()),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    ValueChanged<double> onChanged,
+) {
+    return NumberField(
+        value: value,
+        min: min,
+        max: max,
+        onChanged: onChanged,
         decoration: InputDecoration(
             labelText: label,
             helperText: 'Min $min · Max $max',
         ),
-        onChanged: (text) {
-            final parsed = double.tryParse(text);
-            if (parsed != null && parsed >= min && parsed <= max) {
-                onChanged(step < 1 ? parsed : parsed.roundToDouble());
-            }
-        },
     );
 }

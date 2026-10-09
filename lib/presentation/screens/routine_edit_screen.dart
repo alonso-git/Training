@@ -24,12 +24,19 @@ class RoutineEditScreen extends StatefulWidget {
 class _RoutineEditScreenState extends State<RoutineEditScreen> {
     late final RoutineEditViewModel _vm;
     late final Routine _routine;
+    TextEditingController? _name;
     bool _ready = false;
 
     @override
     void initState() {
         super.initState();
         _load();
+    }
+
+    @override
+    void dispose() {
+        _name?.dispose();
+        super.dispose();
     }
 
     Future<void> _load() async {
@@ -49,6 +56,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
         setState(() {
             _vm = vm;
             _routine = routine;
+            _name ??= TextEditingController(text: vm.name.value);
             _ready = true;
         });
     }
@@ -82,7 +90,7 @@ class _RoutineEditScreenState extends State<RoutineEditScreen> {
             children: [
                 TextField(
                     key: const Key('routine-name-field'),
-                    controller: TextEditingController(text: _vm.name.value),
+                    controller: _name,
                     maxLength: 50,
                     decoration: const InputDecoration(
                         labelText: 'Routine name',
