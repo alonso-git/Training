@@ -23,4 +23,17 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
 }
 
+gradle.beforeProject {
+    // isar 3.x plugins predate AGP 8 and never declared a namespace.
+    // Pin the legacy manifest package so AGP accepts the module.
+    if (name == "isar_flutter_libs") {
+        afterEvaluate {
+            configure<com.android.build.gradle.LibraryExtension> {
+                namespace = "dev.isar.isar_flutter_libs"
+                compileSdk = 36
+            }
+        }
+    }
+}
+
 include(":app")
