@@ -19,4 +19,9 @@ class ExerciseModel {
     late int maxReps;
     late double weightIncrement;
     late bool isCustom;
+
+    /// Suggested rest after each set, in seconds. Null = legacy row saved
+    /// before this attribute existed (treated as no preference); 0 = the
+    /// user explicitly disabled the rest timer; >0 = configured seconds.
+    int? restSeconds;
 }

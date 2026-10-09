@@ -1,10 +1,30 @@
+import 'dart:async';
+
 import 'package:signals/signals.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../data/services/workout_service.dart';
+import '../../domain/entities/exercise.dart';
 import '../../domain/entities/exercise_log.dart';
 import '../../domain/entities/routine.dart';
 import '../../domain/entities/set_log.dart';
+
+/// Reactive countdown state of the between-sets rest timer.
+class RestCountdown {
+    const RestCountdown({
+        this.remaining = 0,
+        this.total = 0,
+        this.active = false,
+    });
+
+    final bool active;
+    final int remaining;
+    final int total;
+
+    double get progress => total > 0 ? remaining / total : 0.0;
+
+    static const RestCountdown off = RestCountdown();
+}
 
 /// Drives the exercise-by-exercise session flow with reactive state:
 /// weight auto-fill, per-set rep logging, and finish validation.
@@ -26,8 +46,10 @@ class SessionViewModel {
     final currentSetIndex = signal<int>(0);
     final pendingLogs = signal<List<ExerciseLogDraft>>([]);
     final error = signal<String?>(null);
+    final rest = signal<RestCountdown>(RestCountdown.off);
 
     final Stopwatch _stopwatch = Stopwatch();
+    Timer? _restTimer;
 
     ExerciseStartState? get currentStartState =>
         _startStates == null || _startStates!.isEmpty
@@ -58,6 +80,7 @@ class SessionViewModel {
         _stopwatch.start();
         loading.value = false;
         started.value = true;
+        cancelRest();
     }
 
     void setWeight(double value) {
@@ -91,7 +114,73 @@ class SessionViewModel {
         final setsLogged = pendingLogs.value[index].setLogs.length;
         if (setsLogged < state.exercise.sets) {
             currentSetIndex.value = setsLogged;
+            _startRestFor(state.exercise);
         }
+    }
+
+    /// Starts the configured rest countdown for [exercise] after a logged
+    /// set, when more sets remain and the exercise opted into the timer.
+    void _startRestFor(Exercise exercise) {
+        final seconds = exercise.restSeconds;
+        if (seconds <= 0) {
+            rest.value = RestCountdown.off;
+            return;
+        }
+        _restTimer?.cancel();
+        rest.value = RestCountdown(
+            remaining: seconds,
+            total: seconds,
+            active: true,
+        );
+        _restTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+            final current = rest.value;
+            if (!current.active) {
+                _restTimer?.cancel();
+                return;
+            }
+            final next = current.remaining - 1;
+            rest.value = next <= 0
+                ? RestCountdown.off
+                : RestCountdown(
+                    remaining: next,
+                    total: current.total,
+                    active: true,
+                );
+            if (next <= 0) {
+                _restTimer?.cancel();
+            }
+        });
+    }
+
+    /// Adds [seconds] to the running countdown (rest extension buttons).
+    void extendRest(int seconds) {
+        final current = rest.value;
+        if (!current.active) {
+            return;
+        }
+        final added = current.remaining + seconds;
+        rest.value = RestCountdown(
+            remaining: added,
+            total: current.total + seconds,
+            active: true,
+        );
+    }
+
+    /// Dismisses the countdown entirely.
+    void skipRest() {
+        _restTimer?.cancel();
+        rest.value = RestCountdown.off;
+    }
+
+    /// Cancels any running countdown (exercise change / finish / abandon).
+    void cancelRest() {
+        _restTimer?.cancel();
+        rest.value = RestCountdown.off;
+    }
+
+    /// Stops pending timers; call from the owning screen's dispose.
+    void dispose() {
+        _restTimer?.cancel();
     }
 
     void undoLastSet() {
@@ -102,6 +191,7 @@ class SessionViewModel {
         }
         pendingLogs.value[index] = draft.removeLast();
         currentSetIndex.value = pendingLogs.value[index].setLogs.length;
+        cancelRest();
     }
 
     bool get isCurrentExerciseComplete {
@@ -120,6 +210,7 @@ class SessionViewModel {
         if (next >= startStates.length) {
             return;
         }
+        cancelRest();
         currentIndex.value = next;
         final draft = pendingLogs.value[next];
         final existing = startStates[next];
@@ -191,6 +282,7 @@ class SessionViewModel {
 
     void abandon() {
         _stopwatch.stop();
+        cancelRest();
         started.value = false;
     }
 }

@@ -67,7 +67,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                                                 'Reps ${exercise.minReps}-'
                                                 '${exercise.maxReps} · '
                                                 '+${formatWeight(exercise.weightIncrement)}'
-                                                ' kg/session',
+                                                ' kg/session'
+                                                '${exercise.hasRestTimer
+                                                    ? ' · Rest: '
+                                                        '${formatRestDuration(exercise.restSeconds)}'
+                                                    : ' · No rest timer'}',
                                             ),
                                         ],
                                     ),

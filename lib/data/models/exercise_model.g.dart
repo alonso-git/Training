@@ -47,13 +47,18 @@ const ExerciseModelSchema = CollectionSchema(
       name: r'name',
       type: IsarType.string,
     ),
-    r'sets': PropertySchema(
+    r'restSeconds': PropertySchema(
       id: 6,
+      name: r'restSeconds',
+      type: IsarType.long,
+    ),
+    r'sets': PropertySchema(
+      id: 7,
       name: r'sets',
       type: IsarType.long,
     ),
     r'weightIncrement': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'weightIncrement',
       type: IsarType.double,
     )
@@ -123,8 +128,9 @@ void _exerciseModelSerialize(
   writer.writeLong(offsets[3], object.minReps);
   writer.writeString(offsets[4], object.muscleGroup);
   writer.writeString(offsets[5], object.name);
-  writer.writeLong(offsets[6], object.sets);
-  writer.writeDouble(offsets[7], object.weightIncrement);
+  writer.writeLong(offsets[6], object.restSeconds);
+  writer.writeLong(offsets[7], object.sets);
+  writer.writeDouble(offsets[8], object.weightIncrement);
 }
 
 ExerciseModel _exerciseModelDeserialize(
@@ -141,8 +147,9 @@ ExerciseModel _exerciseModelDeserialize(
   object.minReps = reader.readLong(offsets[3]);
   object.muscleGroup = reader.readString(offsets[4]);
   object.name = reader.readString(offsets[5]);
-  object.sets = reader.readLong(offsets[6]);
-  object.weightIncrement = reader.readDouble(offsets[7]);
+  object.restSeconds = reader.readLongOrNull(offsets[6]);
+  object.sets = reader.readLong(offsets[7]);
+  object.weightIncrement = reader.readDouble(offsets[8]);
   return object;
 }
 
@@ -166,8 +173,10 @@ P _exerciseModelDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 7:
+      return (reader.readLong(offset)) as P;
+    case 8:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1149,6 +1158,80 @@ extension ExerciseModelQueryFilter
     });
   }
 
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition>
+      restSecondsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'restSeconds',
+      ));
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition>
+      restSecondsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'restSeconds',
+      ));
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition>
+      restSecondsEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'restSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition>
+      restSecondsGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'restSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition>
+      restSecondsLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'restSeconds',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition>
+      restSecondsBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'restSeconds',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<ExerciseModel, ExerciseModel, QAfterFilterCondition> setsEqualTo(
       int value) {
     return QueryBuilder.apply(this, (query) {
@@ -1353,6 +1436,19 @@ extension ExerciseModelQuerySortBy
     });
   }
 
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterSortBy> sortByRestSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'restSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterSortBy>
+      sortByRestSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'restSeconds', Sort.desc);
+    });
+  }
+
   QueryBuilder<ExerciseModel, ExerciseModel, QAfterSortBy> sortBySets() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sets', Sort.asc);
@@ -1468,6 +1564,19 @@ extension ExerciseModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterSortBy> thenByRestSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'restSeconds', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ExerciseModel, ExerciseModel, QAfterSortBy>
+      thenByRestSecondsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'restSeconds', Sort.desc);
+    });
+  }
+
   QueryBuilder<ExerciseModel, ExerciseModel, QAfterSortBy> thenBySets() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sets', Sort.asc);
@@ -1536,6 +1645,13 @@ extension ExerciseModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ExerciseModel, ExerciseModel, QDistinct>
+      distinctByRestSeconds() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'restSeconds');
+    });
+  }
+
   QueryBuilder<ExerciseModel, ExerciseModel, QDistinct> distinctBySets() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sets');
@@ -1591,6 +1707,12 @@ extension ExerciseModelQueryProperty
   QueryBuilder<ExerciseModel, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<ExerciseModel, int?, QQueryOperations> restSecondsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'restSeconds');
     });
   }
 

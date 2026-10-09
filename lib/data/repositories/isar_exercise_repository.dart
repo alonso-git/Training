@@ -18,7 +18,8 @@ class IsarExerciseRepository implements ExerciseRepository {
             ..minReps = e.minReps
             ..maxReps = e.maxReps
             ..weightIncrement = e.weightIncrement
-            ..isCustom = e.isCustom;
+            ..isCustom = e.isCustom
+            ..restSeconds = e.restSeconds;
     }
 
     static Exercise _fromModel(ExerciseModel m) {
@@ -31,6 +32,9 @@ class IsarExerciseRepository implements ExerciseRepository {
             maxReps: m.maxReps,
             weightIncrement: m.weightIncrement,
             isCustom: m.isCustom,
+            // Legacy rows (null) carry no rest preference: fall back to the
+            // project default. A stored 0 means the user opted out.
+            restSeconds: m.restSeconds ?? defaultRestSeconds,
         );
     }
 

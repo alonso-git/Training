@@ -13,6 +13,7 @@ class ExerciseConfigViewModel {
     final minReps = signal<int>(8);
     final maxReps = signal<int>(12);
     final weightIncrement = signal<double>(2.5);
+    final restSeconds = signal<int>(defaultRestSeconds);
     final existingId = signal<String?>(null);
 
     void loadFrom(Exercise exercise) {
@@ -23,6 +24,7 @@ class ExerciseConfigViewModel {
         minReps.value = exercise.minReps;
         maxReps.value = exercise.maxReps;
         weightIncrement.value = exercise.weightIncrement;
+        restSeconds.value = exercise.restSeconds;
     }
 
     void setMaxRepsFromMin(int value) {
@@ -58,6 +60,11 @@ class ExerciseConfigViewModel {
         if (weightIncrement.value < 0.25 || weightIncrement.value > 50) {
             return 'Weight increment must be 0.25-50 kg.';
         }
+        if (restSeconds.value < minRestSeconds ||
+            restSeconds.value > maxRestSeconds) {
+            return 'Rest must be between $minRestSeconds and '
+                '$maxRestSeconds seconds.';
+        }
         return null;
     }
 
@@ -71,6 +78,7 @@ class ExerciseConfigViewModel {
             maxReps: maxReps.value,
             weightIncrement: weightIncrement.value,
             isCustom: isCustom,
+            restSeconds: restSeconds.value,
         );
     }
 }

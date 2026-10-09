@@ -1,3 +1,11 @@
+/// Rest suggestion after each set, in seconds. Defaults to 90 s for every
+/// exercise; 0 disables the auto-started rest timer in the session flow.
+const int defaultRestSeconds = 90;
+
+/// Hard clamps for the rest attribute in the config UI.
+const int minRestSeconds = 0;
+const int maxRestSeconds = 600;
+
 class Exercise {
     const Exercise({
         required this.id,
@@ -8,6 +16,7 @@ class Exercise {
         required this.maxReps,
         required this.weightIncrement,
         required this.isCustom,
+        this.restSeconds = defaultRestSeconds,
     });
 
     final String id;
@@ -19,6 +28,13 @@ class Exercise {
     final double weightIncrement;
     final bool isCustom;
 
+    /// Suggested rest after each completed set, in seconds (0 = no timer).
+    final int restSeconds;
+
+    /// Exercises without a configured rest time have no timer by design:
+    /// the session flow skips the countdown instead of relying on a default.
+    bool get hasRestTimer => restSeconds > 0;
+
     Exercise copyWith({
         String? id,
         String? name,
@@ -28,6 +44,7 @@ class Exercise {
         int? maxReps,
         double? weightIncrement,
         bool? isCustom,
+        int? restSeconds,
     }) {
         return Exercise(
             id: id ?? this.id,
@@ -38,6 +55,7 @@ class Exercise {
             maxReps: maxReps ?? this.maxReps,
             weightIncrement: weightIncrement ?? this.weightIncrement,
             isCustom: isCustom ?? this.isCustom,
+            restSeconds: restSeconds ?? this.restSeconds,
         );
     }
 
@@ -50,6 +68,7 @@ class Exercise {
         'maxReps': maxReps,
         'weightIncrement': weightIncrement,
         'isCustom': isCustom,
+        'restSeconds': restSeconds,
     };
 
     static Exercise fromJson(Map<String, dynamic> json) {
@@ -62,6 +81,9 @@ class Exercise {
             maxReps: (json['maxReps'] as num).toInt(),
             weightIncrement: (json['weightIncrement'] as num).toDouble(),
             isCustom: json['isCustom'] as bool? ?? false,
+            // Robust against hand-edited/legacy backups.
+            restSeconds:
+                (json['restSeconds'] as num?)?.toInt() ?? defaultRestSeconds,
         );
     }
 }

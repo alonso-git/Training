@@ -23,6 +23,12 @@ class _SessionScreenState extends State<SessionScreen> {
     bool _started = false;
 
     @override
+    void dispose() {
+        _vm.dispose();
+        super.dispose();
+    }
+
+    @override
     void initState() {
         super.initState();
         _begin();
@@ -205,10 +211,15 @@ class _SessionBody extends StatelessWidget {
                     Text(
                         'Target: ${exercise.sets} sets × '
                         '${exercise.minReps}-${exercise.maxReps} reps · '
-                        'Muscle: ${exercise.muscleGroup}',
+                        'Muscle: ${exercise.muscleGroup}'
+                        '${exercise.restSeconds > 0
+                            ? ' · Rest: ${formatRestDuration(exercise.restSeconds)}'
+                            : ''}',
                     ),
                     const SizedBox(height: 16),
                     _suggestionBanner(context, state, exercise),
+                    const SizedBox(height: 24),
+                    _restTimerCard(context),
                     const SizedBox(height: 24),
                     _weightEditor(context),
                     const SizedBox(height: 24),
@@ -285,8 +296,76 @@ class _SessionBody extends StatelessWidget {
         );
     }
 
-    Widget _weightEditor(BuildContext context) {
+    /// Between-sets rest countdown, shown while the timer is running.
+    Widget _restTimerCard(BuildContext context) {
+        final rest = vm.rest.value;
+        if (!rest.active) {
+            return const SizedBox.shrink();
+        }
         return Card(
+            key: const Key('rest-timer-card'),
+            color: Theme.of(context).colorScheme.primaryContainer,
+            child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                    children: [
+                        Text(
+                            'Rest — next set in',
+                            style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                            formatRestDuration(rest.remaining),
+                            key: const Key('rest-timer-remaining'),
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayMedium
+                                ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                    fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                    ],
+                                ),
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                            value: rest.progress.clamp(0.0, 1.0),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                                OutlinedButton.icon(
+                                    key: const Key('rest-extend-button'),
+                                    icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        size: 18,
+                                    ),
+                                    label: const Text('+30 s'),
+                                    onPressed: () => vm.extendRest(30),
+                                ),
+                                OutlinedButton.icon(
+                                    key: const Key('rest-skip-button'),
+                                    icon: const Icon(
+                                        Icons.skip_next,
+                                        size: 18,
+                                    ),
+                                    label: const Text('Skip'),
+                                    onPressed: vm.skipRest,
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ),
+        );
+    }
+
+    Widget _weightEditor(BuildContext context) {        return Card(
             child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(

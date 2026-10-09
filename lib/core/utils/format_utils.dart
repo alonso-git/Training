@@ -11,3 +11,11 @@ String formatWeight(double kg) {
     }
     return fixed;
 }
+
+/// Formats a countdown in m:ss (e.g. 90 s -> "1:30").
+String formatRestDuration(int seconds) {
+    final clamped = seconds < 0 ? 0 : seconds;
+    final minutes = clamped ~/ 60;
+    final rest = clamped % 60;
+    return '$minutes:${rest.toString().padLeft(2, '0')}';
+}
